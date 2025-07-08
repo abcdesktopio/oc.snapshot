@@ -7,8 +7,8 @@ name: main
 on: [push, pull_request]
 
 env: 
-  imagetag: ${{ github.head_ref || github.ref_name || 'dev' }}
-  branch: ${{ github.head_ref || github.ref_name || 'dev' }}
+  imagetag: ${{ github.head_ref || github.ref_name || 'dev'||' main' }}
+  branch: ${{ github.head_ref || github.ref_name || 'dev' ||' main'}}
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
