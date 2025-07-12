@@ -1,0 +1,41 @@
+openapi: 3.0.0
+info:
+  title: oc.snapshot
+  version: "1.0"
+  description: |
+    Snapshot API for abcdesktop.
+
+paths:
+  /version:
+    get:
+      summary: Get current version of the API
+      operationId: getVersion
+      tags:
+        - version
+      responses:
+        '200':
+          description: Réponse OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+
+components:
+  schemas:
+    VersionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: version is 20250712.08.44.47
+        status:
+          type: string
+          example: success
+        timestamp:
+          type: string
+          format: date-time
+          example: Sat, 12 Jul 2025 08:49:20 GMT
+      required:
+        - message
+        - status
+        - timestamp

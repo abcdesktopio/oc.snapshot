@@ -1,19 +1,18 @@
-FROM golang:1.24-alpine AS builder
+FROM python:3.14-rc-alpine
 
 WORKDIR /app
-COPY sources/main.go .
+COPY sources /app
 
-# Compilation statique
-RUN go build -ldflags="-s -w" -o server main.go
 
-# Étape 2 : Image minimale FROM scratch
-FROM scratch
+run apk update && \
+    apk upgrade  && \
+    apk add --no-cache nerdctl && \
+    pip install --upgrade pip && \
+    pip install -qU flask-cors && \
+    pip install -qU flask && \
+    pip install -qU PyYAML && \
+    echo "API_VERSION=$(date +\"%Y%m%d.%H.%M.%S\")" > /app/helpers/version.py
 
-# Copier le binaire seulement
-COPY --from=builder /app/server /server
-
-# Port exposé
 EXPOSE 29785
 
-# Commande par défaut
-ENTRYPOINT ["/server"]
+CMD  ["/app/start.sh"]
