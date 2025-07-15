@@ -5,6 +5,7 @@ from typing import Final
 from time import time_ns
 
 from helpers.logs import log_message
+from helpers.settings import ABCDESKTOP_USERID
 from helpers.settings import SNAPSHOT_REGISTRY_USERNAME
 from helpers.settings import SNAPSHOT_REGISTRY_PASSWORD
 from helpers.settings import SNAPSHOT_REGISTRY_REGISTRY
@@ -28,10 +29,10 @@ def get_image_name():
 
     Returns:
         str: A formatted string that represents a uniquely identified Docker image name
-        based on SNAPSHOT_CONTAINER_TARGET_IMAGE, SNAPSHOT_REGISTRY_USERNAME and current
-        timestamp in nanoseconds. The format is: "<target_image>:<username>-<current_timestamp>".
+        based on SNAPSHOT_CONTAINER_TARGET_IMAGE, ABCDESKTOP_USERID and current
+        timestamp in nanoseconds. The format is: "<target_image>:<userid>-<current_timestamp>".
     """
-    return SNAPSHOT_CONTAINER_TARGET_IMAGE + ":" + SNAPSHOT_REGISTRY_USERNAME + "-" + str(time_ns())
+    return SNAPSHOT_CONTAINER_TARGET_IMAGE + ":" + ABCDESKTOP_USERID + "-" + str(time_ns())
 
 def registry_login(p_session_id):
     """
