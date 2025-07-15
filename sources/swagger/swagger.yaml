@@ -60,19 +60,77 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /snapshots:
+    get:
+      summary: Retrieve snapshot operations status and sessions for current user.
+
+
+
+
   /swagger:
     get:
       summary: Return the Swagger API specification
       operationId: getSwaggerSpec
       tags:
         - Documentation
+      description: |
+        Retrieves the list of snapshot sessions and their status for the current user.
+        The user is determined internally (e.g., via a constant like `ABCDESKTOP_USERID`).
+      tags:
+        - Snapshots
       responses:
         '200':
-          description: OpenAPI specification returned successfully
+          description: List of snapshots found for the user.
           content:
             application/json:
               schema:
                 type: object
+                properties:
+                  message:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        session_id:
+                          type: string
+                          example: abc123
+                        status:
+                          type: string
+                          example: done
+                  status:
+                    type: string
+                    example: success
+                  timestamp:
+                    type: string
+                    format: date-time
+                  session_id:
+                    type: string
+                    example: none
+                  api_version:
+                    type: string
+                    example: v1.0.0
+        '404':
+          description: No snapshots found for the user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: no snapshot operations
+                  status:
+                    type: string
+                    example: error
+                  timestamp:
+                    type: string
+                    format: date-time
+                  session_id:
+                    type: string
+                    example: none
+                  api_version:
+                    type: string
+                    example: v1.0.0
 
 components:
   schemas:
@@ -93,3 +151,4 @@ components:
         session_id:
           type: string
           description: Unique identifier for the session
+

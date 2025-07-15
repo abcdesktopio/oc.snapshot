@@ -8,8 +8,6 @@
 # pylint: disable=broad-exception-caught
 # pylint: disable=import-error
 
-#import json
-
 from time import time_ns
 from datetime import datetime
 from threading import Thread
@@ -26,6 +24,7 @@ from helpers.nerdctl import get_container_id
 from helpers.nerdctl import registry_image_commit
 from helpers.nerdctl import get_image_name
 from helpers.nerdctl import NerdctlException
+from helpers.settings import ABCDESKTOP_USERID
 
 app = Flask(__name__)
 CORS(app, origins=["*"])
@@ -43,23 +42,23 @@ def process_snapshot(p_session_id: str) -> None:
     image_name = get_image_name()
 
     try:
-        session_cache[p_session_id] = "search desktop id"
+        session_cache[p_session_id]['status'] = "search desktop id"
         container_id=get_container_id(p_session_id)
         if container_id == "unknown":
             log_message("container not found for session - " + p_session_id)
 
-        session_cache[p_session_id] = "generate desktop image"
+        session_cache[p_session_id]['status'] = "generate desktop image"
         registry_image_commit(p_session_id,container_id,image_name)
 
-        session_cache[p_session_id] = "login to registry"
+        session_cache[p_session_id]['status'] = "login to registry"
         registry_login(p_session_id)
 
-        session_cache[p_session_id] = "push desktop image to registry"
+        session_cache[p_session_id]['status'] = "push desktop image to registry"
         registry_push(p_session_id,image_name)
 
-        session_cache[p_session_id] = "done"
+        session_cache[p_session_id]['status'] = "done"
     except NerdctlException:
-        session_cache[p_session_id] = "error"
+        session_cache[p_session_id]['status'] = "error"
 
 def json_response_maker(current_message,current_status,p_session_id=None):
     """
@@ -94,7 +93,28 @@ def snapshot_status(p_session_id):
     if p_session_id not in session_cache:
         return json_response_maker('unknown session',"error",p_session_id),404
 
-    return json_response_maker(session_cache.get(p_session_id),"success",p_session_id),200
+    return json_response_maker(session_cache[p_session_id]['status'],"success",p_session_id),200
+
+
+@app.route('/snapshots/', methods=['GET'], strict_slashes=False)
+def snapshots_status():
+    """
+    Get snapshots status of the user_id.
+    """
+
+    result = []
+    for session_id, data in session_cache.items():
+        if data.get('user_id') == ABCDESKTOP_USERID:
+            result.append({
+                'session_id': session_id,
+                'status': data.get('status'),
+            })
+    if len(result) == 0:
+        return json_response_maker('no snapshot operations',"error"),404
+    return json_response_maker(jsonify(result),"success"),200
+
+
+#    return json_response_maker(session_cache.get[session_id]['status'],"success",p_session_id),200
 
 @app.route('/snapshot', methods=['POST'], strict_slashes=False)
 def snapshot():
@@ -102,37 +122,15 @@ def snapshot():
     Snapshot of the current state of the system.
     """
     session_id = str(time_ns())
-    session_cache[session_id] = "starting"
+
+    session_cache[session_id] = {
+        "status": "starting",
+        "user_id": ABCDESKTOP_USERID
+    }
 
     thread = Thread(target=process_snapshot, args=(session_id,))
     thread.start()
     return json_response_maker('snapshot process started',"success",session_id),200
-
-    # image_name = get_image_name()
-
-    # log_message("Starting session - " + session_id+" -- " +
-    #              "image_name "+image_name)
-    # try:
-    #     session_cache[session_id] = "search desktop id"
-    #     container_id=get_container_id(session_id)
-    #     if container_id == "unknown":
-    #         log_message("Container not found for session - " + session_id)
-
-    #     session_cache[session_id] = "generate desktop image"
-    #     registry_image_commit(session_id,container_id,image_name)
-
-    #     session_cache[session_id] = "login to registry"
-    #     registry_login(session_id)
-
-    #     session_cache[session_id] = "push desktop image to registry"
-    #     registry_push(session_id,image_name)
-
-    #     session_cache[session_id] = "done"
-
-    #     return json_response_maker('image pushed to registry',"success",session_id),200
-    # except NerdctlException as e:
-    #     session_cache[session_id] = "error"
-    #     return json_response_maker("error"+e.args[0],"error",session_id),200
 
 @app.route('/swagger.json',methods=['GET'])
 @app.route('/swagger', methods=['GET'], strict_slashes=False)

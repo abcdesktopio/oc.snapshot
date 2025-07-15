@@ -121,6 +121,44 @@ Returns the current status of a snapshot session.
 
 ![snapshot-steps](doc/images/state.drawio.png)
 
+#### `GET /snapshots`
+
+##### 🔹 Description
+
+Retrieves the list of snapshot sessions and their status for the current user. The user is determined internally (e.g., via a constant like `ABCDESKTOP_USERID`).
+
+##### 🔹 Successful Response
+
+```json
+{
+  "message": [
+    {
+      "session_id": "abc123",
+      "status": "done"
+    },
+    {
+      "session_id": "xyz789",
+      "status": "done"
+    }
+  ],
+  "status": "success",
+  "timestamp": "2025-07-13T15:21:34.123456",
+  "session_id": "none",
+  "api_version": "v1.0.0"
+}
+```
+
+##### Error Response (Unknown Session)
+
+```json
+{
+  "message": "unknown session",
+  "status": "error",
+  "timestamp": "2025-07-13T15:24:00.000Z",
+  "session_id": "invalid_session_id",
+  "api_version": "1.0.0"
+}
+```
 
 #### `GET /swagger`
 
