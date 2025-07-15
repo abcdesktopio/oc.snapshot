@@ -8,6 +8,7 @@
 # pylint: disable=broad-exception-caught
 # pylint: disable=import-error
 
+import json
 from time import time_ns
 from datetime import datetime
 from threading import Thread
@@ -111,7 +112,7 @@ def snapshots_status():
             })
     if len(result) == 0:
         return json_response_maker('no snapshot operations',"error"),404
-    return json_response_maker(jsonify(result),"success"),200
+    return json_response_maker(json.dumps(result),"success"),200
 
 
 #    return json_response_maker(session_cache.get[session_id]['status'],"success",p_session_id),200
