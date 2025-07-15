@@ -10,6 +10,7 @@ run apk update && \
     pip install --upgrade pip && \
     pip install -qU flask-cors && \
     pip install -qU flask && \
+    pip install -qU cachetools && \
     pip install -qU PyYAML && \
     echo "API_VERSION=$(date +\"%Y%m%d.%H.%M.%S\")" > /app/helpers/version.py
 

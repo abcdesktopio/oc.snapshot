@@ -4,85 +4,149 @@
 
 ## API
 
-The **oc.snapshot** sidecar exposes an HTTP API for managing snapshots. The API is accessible at `http://<sidecar_ip>:29785`. Below are some of the available endpoints and their functionalities:
-- **POST /snapshot**: Creates a new snapshot of the current environment. The response will include details about the created snapshot.
+The **Nerdctl Snapshot API** allows clients to:
 
+* Check the current API version
+* Trigger a snapshot of the current container state
+* Monitor the status of a snapshot using a session ID
+* Access the OpenAPI documentation dynamically
 
-Certainly! Here's a **professional English version** of how to document your REST API in a `README.md` file, tailored to your Python source code:
+This API is intended to interact with a container runtime (`nerdctl`) to automate snapshot and image push workflows.
 
+The API is accessible at http://<sidecar_ip>:29785. Below are some of the available endpoints and their functionalities:
 
-### `GET /version`
+```
+http://localhost:5000
+```
 
-**Description**: Returns the current version of the API.
+### Common Response Format
 
-**Response Example**:
+All endpoints return a consistent JSON structure:
 
 ```json
 {
+  "message": "string",
+  "status": "success | error",
+  "timestamp": "ISO 8601 timestamp",
+  "session_id": "string",
+  "api_version": "string"
+}
+```
+
+### Endpoints
+
+#### `GET /version`
+
+##### 🔹 Description
+
+Returns the current API version.
+
+##### 🔹 Response Example
+
+```json
+{
+  "message": "version is 1.0.0",
   "status": "success",
-  "message": "version is 1.0.0"
+  "timestamp": "2025-07-13T15:21:55.891Z",
+  "session_id": "none",
+  "api_version": "1.0.0"
 }
 ```
 
-### 🔹 `POST /snapshot`
+#### `POST /snapshot`
 
-**Description**: Captures a snapshot of the current system state and pushes the resulting image to the container registry.
+##### 🔹 Description
 
-**Success Response**:
+Triggers a system snapshot by:
+
+1. Identifying the container
+2. Creating a container image
+3. Logging into a registry
+4. Pushing the image to the registry
+
+##### 🔹 Response Example
 
 ```json
 {
+  "message": "image pushed to registry",
   "status": "success",
-  "message": "image pushed to registry"
+  "timestamp": "2025-07-13T15:23:12.123Z",
+  "session_id": "1720947792123123123",
+  "api_version": "1.0.0"
 }
 ```
 
-**Error Response**:
+##### Notes
+
+* A unique `session_id` is generated for tracking the snapshot process.
+* Use this `session_id` with the `/snapshot/{session_id}` endpoint to monitor progress.
+
+#### `GET /snapshot/{session_id}`
+
+##### 🔹 Description
+
+Returns the current status of a snapshot session.
+
+##### 🔹 Path Parameters
+
+| Name         | Type   | Description             |
+| ------------ | ------ | ----------------------- |
+| `session_id` | string | The session ID to track |
+
+##### 🔹 Successful Response
 
 ```json
 {
-  "status": "error",
-  "message": "error <description>"
+  "message": "done",
+  "status": "success",
+  "timestamp": "2025-07-13T15:23:22.001Z",
+  "session_id": "1720947792123123123",
+  "api_version": "1.0.0"
 }
 ```
 
-### `GET /swagger` or `GET /swagger.json`
-
-**Description**: Returns the Swagger (OpenAPI) specification describing the available API endpoints.
-
-**Response**: A Swagger JSON object generated from `swagger/swagger.yaml`.
-
-
-### `404 Not Found`
-
-**Description**: Returned when the requested endpoint does not exist.
-
-**Response Example**:
+##### Error Response (Unknown Session)
 
 ```json
 {
+  "message": "unknown session",
   "status": "error",
-  "message": "unsupported page"
+  "timestamp": "2025-07-13T15:24:00.000Z",
+  "session_id": "invalid_session_id",
+  "api_version": "1.0.0"
 }
 ```
 
-## 🛠️ Possible Errors
+##### snapshot steps
 
-* `500` – Failed to load or parse the Swagger YAML file.
-* `200` with `"status": "error"` – Typically returned if a `nerdctl` operation fails during `/snapshot`.
+![snapshot-steps](doc/images/state.drawio.png)
 
----
 
-## Development tests
+#### `GET /swagger`
 
-To get the current version of the API, run:
+or
 
-~~~bash
-curl -X POST http://localhost:29785/version
-~~~
+#### `GET /swagger.json`
 
-To run a manual snapshot, you can use the following command:
+##### 🔹 Description
 
-~~~bash
-curl -X POST http://localhost:29785/snapshot
-~~~
+Returns the full OpenAPI (Swagger) specification for this API.
+
+##### 🔹 Response
+
+Returns the YAML or JSON specification used for Swagger UI, Redoc, etc.
+
+### Error Handling
+
+If an unknown endpoint is called, the API will return:
+
+```json
+{
+  "message": "unsupported page",
+  "status": "error",
+  "timestamp": "2025-07-13T15:25:00.000Z",
+  "session_id": "none",
+  "api_version": "1.0.0"
+}
+```
+

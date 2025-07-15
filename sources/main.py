@@ -12,11 +12,11 @@
 
 from time import time_ns
 from datetime import datetime
-# import requests
+from threading import Thread
 import yaml
-
 from flask import Flask, jsonify
 from flask_cors import CORS
+from cachetools import TTLCache
 
 from helpers.logs import log_message,init_logger
 from helpers.version import API_VERSION
@@ -32,8 +32,36 @@ CORS(app, origins=["*"])
 
 console_logger = init_logger()
 
+# Cache for session data, TTL of 20 minutes.
+# maxsize: 1 million entries, ttl: 1200 seconds (20 minutes).
+session_cache = TTLCache(maxsize=10**6, ttl=20*60)
 
-def json_response_maker(current_message,current_status):
+def process_snapshot(p_session_id: str) -> None:
+    """
+    Snapshot of the current state of the system.
+    """
+    image_name = get_image_name()
+
+    try:
+        session_cache[p_session_id] = "search desktop id"
+        container_id=get_container_id(p_session_id)
+        if container_id == "unknown":
+            log_message("container not found for session - " + p_session_id)
+
+        session_cache[p_session_id] = "generate desktop image"
+        registry_image_commit(p_session_id,container_id,image_name)
+
+        session_cache[p_session_id] = "login to registry"
+        registry_login(p_session_id)
+
+        session_cache[p_session_id] = "push desktop image to registry"
+        registry_push(p_session_id,image_name)
+
+        session_cache[p_session_id] = "done"
+    except NerdctlException:
+        session_cache[p_session_id] = "error"
+
+def json_response_maker(current_message,current_status,p_session_id=None):
     """
     Generate a json structured answer from parameters
     and return it
@@ -41,7 +69,9 @@ def json_response_maker(current_message,current_status):
     response = {
         'message': current_message,
         'status': current_status,
-        'timestamp': datetime.now()
+        'timestamp': datetime.now(),
+        'session_id': p_session_id if p_session_id else 'none',
+        'api_version': API_VERSION
     }
 
     return jsonify(response)
@@ -55,29 +85,54 @@ def version():
     return json_response_maker('version is ' + API_VERSION,"success"),200
 
 
+@app.route('/snapshot/<string:p_session_id>', methods=['GET'], strict_slashes=False)
+def snapshot_status(p_session_id):
+    """
+    Get snapshot status of the session id.
+    """
+
+    if p_session_id not in session_cache:
+        return json_response_maker('unknown session',"error",p_session_id),404
+
+    return json_response_maker(session_cache.get(p_session_id),"success",p_session_id),200
+
 @app.route('/snapshot', methods=['POST'], strict_slashes=False)
 def snapshot():
     """
     Snapshot of the current state of the system.
     """
-
     session_id = str(time_ns())
-    image_name = get_image_name()
+    session_cache[session_id] = "starting"
 
-    log_message("Starting session - " + session_id+" -- " +
-                 "image_name "+image_name)
-    try:
-        container_id=get_container_id(session_id)
-        if container_id == "unknown":
-            log_message("Container not found for session - " + session_id)
-        registry_image_commit(session_id,container_id,image_name)
+    thread = Thread(target=process_snapshot, args=(session_id,))
+    thread.start()
+    return json_response_maker('snapshot process started',"success",session_id),200
 
-        registry_login(session_id)
-        registry_push(session_id,image_name)
+    # image_name = get_image_name()
 
-        return json_response_maker('image pushed to registry',"success"),200
-    except NerdctlException as e:
-        return json_response_maker("error"+e.args[0],"error"),200
+    # log_message("Starting session - " + session_id+" -- " +
+    #              "image_name "+image_name)
+    # try:
+    #     session_cache[session_id] = "search desktop id"
+    #     container_id=get_container_id(session_id)
+    #     if container_id == "unknown":
+    #         log_message("Container not found for session - " + session_id)
+
+    #     session_cache[session_id] = "generate desktop image"
+    #     registry_image_commit(session_id,container_id,image_name)
+
+    #     session_cache[session_id] = "login to registry"
+    #     registry_login(session_id)
+
+    #     session_cache[session_id] = "push desktop image to registry"
+    #     registry_push(session_id,image_name)
+
+    #     session_cache[session_id] = "done"
+
+    #     return json_response_maker('image pushed to registry',"success",session_id),200
+    # except NerdctlException as e:
+    #     session_cache[session_id] = "error"
+    #     return json_response_maker("error"+e.args[0],"error",session_id),200
 
 @app.route('/swagger.json',methods=['GET'])
 @app.route('/swagger', methods=['GET'], strict_slashes=False)
