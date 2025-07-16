@@ -46,7 +46,7 @@ def log_to_websocket_server(ip_addr:str, port:int=29784, message:str='payload')-
     # uri to reach the ws server
     uri = f"ws://{ip_addr}:{port}"
     try:
-        dict_message = { 'method': 'snapshot', 'data': message };
+        dict_message = { 'method': 'snapshot', 'data': message }
         # conect to the ws server
         with connect(uri) as websocket:
             # write message
