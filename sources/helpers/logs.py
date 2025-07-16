@@ -2,6 +2,14 @@
 Module: logs
 """
 
+
+# Pylint rules
+# pylint: disable=superfluous-parens
+# pylint: disable=invalid-name
+# pylint: disable=unused-argument
+# pylint: disable=broad-exception-caught
+# pylint: disable=import-error
+
 import logging
 import json
 from datetime import datetime
@@ -32,15 +40,18 @@ def log_message(message):
 
 
 def log_to_websocket_server(ip_addr:str, port:int=29784, message:str='payload')->None:
+    """
+    Log a message to a WebSocket server
+    """
     # uri to reach the ws server
     uri = f"ws://{ip_addr}:{port}"
     try:
-        dict_message = { 'method': 'snapshot', 'data': message }; 
+        dict_message = { 'method': 'snapshot', 'data': message };
         # conect to the ws server
         with connect(uri) as websocket:
             # write message
             websocket.send(json.dumps(dict_message))
     except Exception as e:
-        # nothing to do 
+        # nothing to do
         log_message( e )
         # pass

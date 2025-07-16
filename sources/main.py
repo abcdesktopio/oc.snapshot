@@ -40,8 +40,11 @@ session_cache = TTLCache(maxsize=10**6, ttl=20*60)
 
 
 def broadcast_message( message:str ):
+    """
+    Broadcast message to the websocket server.
+    """
     if isinstance( POD_IP, str ):
-      log_to_websocket_server( ip_addr=POD_IP, message=message )
+        log_to_websocket_server( ip_addr=POD_IP, message=message )
 
 def process_snapshot(p_session_id: str) -> None:
     """
