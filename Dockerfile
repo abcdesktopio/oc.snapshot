@@ -12,6 +12,7 @@ run apk update && \
     pip install -qU flask && \
     pip install -qU cachetools && \
     pip install -qU PyYAML && \
+    pip install -qU websockets && \
     echo "API_VERSION=$(date +\"%Y%m%d.%H.%M.%S\")" > /app/helpers/version.py
 
 EXPOSE 29785

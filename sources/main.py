@@ -17,7 +17,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from cachetools import TTLCache
 
-from helpers.logs import log_message,init_logger
+from helpers.logs import log_message,init_logger,log_to_websocket_server
 from helpers.version import API_VERSION
 from helpers.nerdctl import registry_login
 from helpers.nerdctl import registry_push
@@ -26,15 +26,22 @@ from helpers.nerdctl import registry_image_commit
 from helpers.nerdctl import get_image_name
 from helpers.nerdctl import NerdctlException
 from helpers.settings import ABCDESKTOP_USERID
+from helpers.settings import POD_IP 
 
 app = Flask(__name__)
 CORS(app, origins=["*"])
 
 console_logger = init_logger()
 
+
 # Cache for session data, TTL of 20 minutes.
 # maxsize: 1 million entries, ttl: 1200 seconds (20 minutes).
 session_cache = TTLCache(maxsize=10**6, ttl=20*60)
+
+
+def broadcast_message( message:str ):
+    if isinstance( POD_IP, str ):
+      log_to_websocket_server( ip_addr=POD_IP, message=message )
 
 def process_snapshot(p_session_id: str) -> None:
     """
@@ -49,13 +56,17 @@ def process_snapshot(p_session_id: str) -> None:
             log_message("container not found for session - " + p_session_id)
 
         session_cache[p_session_id]['status'] = "generate desktop image"
+        broadcast_message( 'generating desktop image' )
         registry_image_commit(p_session_id,container_id,image_name)
+        broadcast_message( 'desktop image is generated' )
 
         session_cache[p_session_id]['status'] = "login to registry"
         registry_login(p_session_id)
 
         session_cache[p_session_id]['status'] = "push desktop image to registry"
+        broadcast_message( f"pushing desktop image to registry" )
         registry_push(p_session_id,image_name)
+        broadcast_message( f"desktop image is pushed"  )
 
         session_cache[p_session_id]['status'] = "done"
     except NerdctlException:
