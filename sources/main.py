@@ -67,9 +67,9 @@ def process_snapshot(p_session_id: str) -> None:
         registry_login(p_session_id)
 
         session_cache[p_session_id]['status'] = "push desktop image to registry"
-        broadcast_message( f"pushing desktop image to registry" )
+        broadcast_message( "pushing desktop image to registry" )
         registry_push(p_session_id,image_name)
-        broadcast_message( f"desktop image is pushed"  )
+        broadcast_message( "desktop image is pushed"  )
 
         session_cache[p_session_id]['status'] = "done"
     except NerdctlException:
