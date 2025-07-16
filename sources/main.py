@@ -26,7 +26,7 @@ from helpers.nerdctl import registry_image_commit
 from helpers.nerdctl import get_image_name
 from helpers.nerdctl import NerdctlException
 from helpers.settings import ABCDESKTOP_USERID
-from helpers.settings import POD_IP 
+from helpers.settings import POD_IP
 
 app = Flask(__name__)
 CORS(app, origins=["*"])
